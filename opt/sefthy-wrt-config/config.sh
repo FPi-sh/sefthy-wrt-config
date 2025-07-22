@@ -74,7 +74,7 @@ SEF
     /etc/init.d/sefthy-vxlan enable
     
     /etc/init.d/sefthy-wg enable
-    /etc/init.d/sefthy-wg restart
+    /etc/init.d/sefthy-wg status && /etc/init.d/sefthy-wg restart || /etc/init.d/sefthy-wg start
     bash vxlan.sh
 
     sed -Ei "s/^GRAYLOG_IP.*$/GRAYLOG_IP=\"$graylog\"/g" /opt/sefthy-wrt-monitor/monitor.sh
