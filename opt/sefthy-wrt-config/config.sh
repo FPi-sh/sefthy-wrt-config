@@ -129,10 +129,10 @@ if echo "$response" | jq . >/dev/null 2>&1; then
   if [[ "$(echo $response | jq .message)" == "null" ]]; then
     config $response
   else
-    echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: ERR:Token not found" | tee -a /var/log/messages
-    echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: $response" | tee -a /var/log/messages
+    logger -t "SefthyConfig" ERR:Token not found
+    logger -t "SefthyConfig" $response
   fi
 else
-  echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: ERR:Invalid JSON" | tee -a /var/log/messages
-  echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: $response" | tee -a /var/log/messages
+  logger -t "SefthyConfig" ERR:Invalid JSON
+  logger -t "SefthyConfig" $response
 fi
