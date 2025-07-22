@@ -7,6 +7,7 @@ API="https://console.sefthy.cloud"
 VALIDATE_EP="0b5c66f4-40fe-4fe7-9391-f7d2d7f59974/validate-connector"
 CONFIRM_EP="03ae5cb6-a229-4492-b390-ed8280c77f26/confirm-connector"
 N=60
+HOST="$(uci get system.@system[0].hostname)"
 
 if [ -e "$LOCKFILE" ]; then
   exit 1
@@ -128,10 +129,10 @@ if echo "$response" | jq . >/dev/null 2>&1; then
   if [[ "$(echo $response | jq .message)" == "null" ]]; then
     config $response
   else
-    logger -t "SefthyConfig" ERR:Token not found
-    logger -t "SefthyConfig" $response
+    echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: ERR:Token not found" | tee -a /var/log/messages
+    echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: $response" | tee -a /var/log/messages
   fi
 else
-  logger -t "SefthyConfig" "ERR:Invalid JSON"
-  logger -t "SefthyConfig" $response
+  echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: ERR:Invalid JSON" | tee -a /var/log/messages
+  echo "$(date '+%b %d %H:%M:%S') $HOST SefthyConfig: $response" | tee -a /var/log/messages
 fi

@@ -9,10 +9,10 @@ check_config(){
     [ -f .config_complete ] && {
         STATUS=status_ok
     } || {
-        [ $(logread | grep "SefthyConfig" | grep "ERR:" | tail -n1 | wc -l) -eq 1 ] && {
+        [ $(tail -n40 /var/log/messages | grep "SefthyConfig" | grep "ERR:" | tail -n1 | wc -l) -eq 1 ] && {
             STATUS=status_err
         }
-        [ $(logread | grep "SefthyConfig" | grep "ERR:Token not found" | tail -n1 | wc -l) -eq 1 ] && {
+        [ $(tail -n40 /var/log/messages | grep "SefthyConfig" | grep "ERR:Token not found" | tail -n1 | wc -l) -eq 1 ] && {
             STATUS=status_notfound
         }
     }
