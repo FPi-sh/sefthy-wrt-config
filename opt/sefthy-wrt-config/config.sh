@@ -119,6 +119,7 @@ SEF
   "disable")
     /etc/init.d/sefthy-dr-bridge stop
     /etc/init.d/sefthy-dr-bridge disable
+    brctl delif $BR sefthy
     ;;
   esac
   exit 0
