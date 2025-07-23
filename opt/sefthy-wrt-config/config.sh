@@ -66,6 +66,7 @@ SEF
     cat > vxlan.sh <<SEF
 #!/bin/bash
 
+echo N > /sys/module/vxlan/parameters/log_ecn_error
 ip link add sefthy type vxlan remote $ptp_r id $vniid dstport $vxport
 ip link set dev sefthy mtu 1362
 ip link set dev sefthy up
@@ -91,7 +92,7 @@ SEF
       echo -e '#!/bin/bash\n\nBR=$(sqlite3 /opt/sefthy-wrt-gui/app.db "select bridge_name from selected_bridge")\nwhile true ; do\n  ip link show dev sefthy >/dev/null 2>&1\n\n  if [ $? -eq 0 ]; then\n    break\n  fi\n\n  sleep 10\ndone\n\ninterfaces="$BR "`ls /sys/class/net/$BR/brif | grep -v sefthy`\nfor i in ${interfaces[@]}; do ip link set dev $i mtu 1362; done\nbrctl addif $BR sefthy\n' > dr-bridge.sh
       chmod +x dr-bridge.sh
       /etc/init.d/sefthy-dr-bridge enable
-      brctl addif $BR sefthy
+      /etc/init.d/sefthy-dr-bridge start
     fi
 
     /etc/init.d/sefthy-wrt-velch enable
