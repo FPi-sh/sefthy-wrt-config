@@ -113,10 +113,10 @@ SEF
     echo -e '#!/bin/bash\n\nBR=$(sqlite3 /opt/sefthy-wrt-gui/app.db "select bridge_name from selected_bridge")\nwhile true ; do\n  ip link show dev sefthy >/dev/null 2>&1\n\n  if [ $? -eq 0 ]; then\n    break\n  fi\n\n  sleep 10\ndone\n\ninterfaces="$BR "`ls /sys/class/net/$BR/brif | grep -v sefthy`\nfor i in ${interfaces[@]}; do ip link set dev $i mtu 1362; done\nbrctl addif $BR sefthy\n' > dr-bridge.sh
     chmod +x dr-bridge.sh
     /etc/init.d/sefthy-dr-bridge enable
-    brctl addif $BR sefthy
+    /etc/init.d/sefthy-dr-bridge start
     ;;
   "disable")
-    brctl delif $BR sefthy
+    /etc/init.d/sefthy-dr-bridge stop
     /etc/init.d/sefthy-dr-bridge disable
     ;;
   esac
