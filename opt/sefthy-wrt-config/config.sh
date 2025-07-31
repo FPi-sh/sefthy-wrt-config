@@ -16,16 +16,18 @@ fi
 touch "$LOCKFILE"
 trap 'rm -f "$LOCKFILE"; exit' INT TERM EXIT
 
-TOKEN=$(sqlite3 /opt/sefthy-wrt-gui/app.db "SELECT token FROM config")
+TOKEN=$(uci get sefthy.config.token)
 if [[ -z "$TOKEN" || ! "$TOKEN" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
   exit 1
 fi
 
-BR=$(sqlite3 /opt/sefthy-wrt-gui/app.db "select bridge_name from selected_bridge")
+BR=$(uci -q get sefthy.config.selected_br)
+DEV=$(uci show network | grep "name='$BR'" | cut -d "." -f2)
+CC=$(uci -q get sefthy.config.config_complete)
 
 config(){
   local PARAMS=$1
-  [[ -e .config_complete && "$(echo $PARAMS | jq .active)" -eq "1" ]]  && {
+  [[ $CC -eq 1 && "$(echo $PARAMS | jq .active)" -eq "1" ]]  && {
     return 0
   } || {
     network=$(echo $PARAMS | jq .wireguard.network | tr -d '"')
@@ -89,8 +91,9 @@ SEF
     fi
 
     if [ "$add_bridge" == "true" ]; then
-      echo -e '#!/bin/bash\n\nBR=$(sqlite3 /opt/sefthy-wrt-gui/app.db "select bridge_name from selected_bridge")\nwhile true ; do\n  ip link show dev sefthy >/dev/null 2>&1\n\n  if [ $? -eq 0 ]; then\n    break\n  fi\n\n  sleep 10\ndone\n\ninterfaces="$BR "`ls /sys/class/net/$BR/brif | grep -v sefthy`\nfor i in ${interfaces[@]}; do ip link set dev $i mtu 1362; done\nbrctl addif $BR sefthy\n' > dr-bridge.sh
-      chmod +x dr-bridge.sh
+      uci set network.$DEV.ports="`uci get network.$DEV.ports` sefthy"
+      uci commit network && /etc/init.d/network reload
+
       /etc/init.d/sefthy-dr-bridge enable
       /etc/init.d/sefthy-dr-bridge start
     fi
@@ -98,28 +101,32 @@ SEF
     /etc/init.d/sefthy-wrt-velch enable
     /etc/init.d/sefthy-wrt-velch start
 
-    grep "sshx" /etc/cron.d/sefthy || {
-      echo "*/5 * * * * /bin/pidof sshx && { RS=\$(/opt/sefthy-wrt-config/puptime.sh sshx); if [ \$RS -ge 2999 ]; then kill -9 \`/bin/pidof sshx\`; fi }" >> /etc/cron.d/sefthy
-      /etc/init.d/micrond restart
+    grep "sshx" /etc/crontabs/root || {
+      echo "*/5 * * * * /bin/pidof sshx && { RS=\$(/opt/sefthy-wrt-config/puptime.sh sshx); if [ \$RS -ge 2999 ]; then kill -9 \`/bin/pidof sshx\`; fi }" >> /etc/crontabs/root
+      /etc/init.d/cron reload
     }
     
 
-    touch .config_complete && curl -X POST -s "$API/$CONFIRM_EP" -d "{\"token\":\"$TOKEN\"}" -H "Content-Type: application/json" >/dev/null
+    uci -q set sefthy.config.config_complete=1 && uci -q commit sefthy && \
+    curl -X POST -s "$API/$CONFIRM_EP" -d "{\"token\":\"$TOKEN\"}" -H "Content-Type: application/json" >/dev/null
   }
 }
 
 [[ ! -z $1 ]] && {
   case $1 in
   "enable")
-    echo -e '#!/bin/bash\n\nBR=$(sqlite3 /opt/sefthy-wrt-gui/app.db "select bridge_name from selected_bridge")\nwhile true ; do\n  ip link show dev sefthy >/dev/null 2>&1\n\n  if [ $? -eq 0 ]; then\n    break\n  fi\n\n  sleep 10\ndone\n\ninterfaces="$BR "`ls /sys/class/net/$BR/brif | grep -v sefthy`\nfor i in ${interfaces[@]}; do ip link set dev $i mtu 1362; done\nbrctl addif $BR sefthy\n' > dr-bridge.sh
-    chmod +x dr-bridge.sh
+    uci set network.$DEV.ports="`uci get network.$DEV.ports` sefthy"
+    uci commit network && /etc/init.d/network reload
+
     /etc/init.d/sefthy-dr-bridge enable
     /etc/init.d/sefthy-dr-bridge start
     ;;
   "disable")
+    uci set network.$DEV.ports="`uci get network.$DEV.ports | sed 's/ sefthy//g'`"
+    uci commit network && /etc/init.d/network reload
+
     /etc/init.d/sefthy-dr-bridge stop
     /etc/init.d/sefthy-dr-bridge disable
-    brctl delif $BR sefthy
     ;;
   esac
   exit 0

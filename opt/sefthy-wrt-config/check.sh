@@ -6,7 +6,7 @@ STATUS="status_wait"
 VPN=""
 
 check_config(){
-    [ -f .config_complete ] && {
+    [ $(uci -q get sefthy.config.config_complete) -eq 1 ] && {
         STATUS=status_ok
     } || {
         [ $(tail -n40 /var/log/messages | grep "SefthyConfig" | grep "ERR:" | tail -n1 | wc -l) -eq 1 ] && {

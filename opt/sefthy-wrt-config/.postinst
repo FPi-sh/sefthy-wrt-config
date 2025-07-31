@@ -1,0 +1,11 @@
+#!/bin/bash
+
+ln -s /opt/sefthy-wrt-gui/uptimex /usr/sbin/uptimex
+ln -s /opt/sefthy-wrt-config/wg-quick /usr/sbin/wg-quick
+
+echo "* * * * * /opt/sefthy-wrt-config/config.sh" >> /etc/crontabs/root
+/etc/init.d/cron reload
+
+mkdir -p /usr/local && ln -s /usr/sbin /usr/local/bin
+
+( sleep 10; for svc in "sefthy-dr-bridge" "sefthy-vxlan" "sefthy-wg" "sefthy-wrt-velch" "sefthy-wrt-wh"; do /etc/init.d/$svc disable; sed -Ei '/^    return 0$/d' /etc/init.d/$svc; done ) &

@@ -5,12 +5,13 @@ START=99
 STOP=15
 
 start_service() {
+    return 0
     /usr/sbin/wg-quick up /etc/wireguard/sefthy-wg.conf
     /etc/init.d/sefthy-wrt-wh start
 }
 
 stop_service() {
-    /usr/sbin/wg-quick down /etc/wireguard/sefthy-wg.conf
+    [ -f "/etc/wireguard/sefthy-wg.conf" ] && /usr/sbin/wg-quick down /etc/wireguard/sefthy-wg.conf
     /etc/init.d/sefthy-wrt-wh stop
 }
 
